@@ -12,5 +12,5 @@ additional variables that may improve performance are identified.
 
 <p align="center">
   <img src="sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/Presentation/assets/tb2.png" width="350" title="hover text">
-  <img src="sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/Presentation/assets" width="350" alt="accessibility text">
+  <img src="sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/Presentation/assets/tb2.png" width="350" alt="accessibility text">
 </p>

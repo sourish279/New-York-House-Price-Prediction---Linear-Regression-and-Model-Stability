@@ -1,0 +1,519 @@
+---
+title: "Report and Presentation Plot Creation"
+author: "Sourish Iyengar"
+output: 
+  rmdformats::material:
+    code_folding: hide
+    fig_caption: yes
+    number_sections: no
+    self_contained: yes
+---
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE, warning = FALSE)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+library("tidyverse")
+library("janitor")
+library("plotly")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+df = read_tsv("Executive Summary - Report/Rdata_Files/housing-prices-ge19.txt") %>% clean_names()
+df = df %>% mutate(central_air = if_else(central_air== 0, "no", "yes"), waterfront = if_else(waterfront== 0, "no", "yes"),test = if_else(test== 0, "no", "yes"), new_construct = if_else(new_construct== 0, "no", "yes"))
+
+df_numeric = df %>% select_if(is.numeric)
+df_character =  df %>% select_at(vars(names(.)[map_lgl(., is.character)], price))
+```
+
+
+
+# EDA
+
+## How house prices vary with categorical variables
+
+Notably, having a waterfront seems to be associated with a higher median house price. Since there is no overlap in the boxes this may be significantly different (should probably be careful with the significance wording). Having no heating and no fuel type also seems to be associated with lower prices. Thus we may want to collapse the fuel type and heat type to binary categories.
+
+```{r, fig.cap = "Figure 1"}
+df_character =  df %>% select_at(vars(names(.)[map_lgl(., is.character)], price))
+
+g = df_character %>% gather( key = "variable", value = "value",-"price") %>%   ggplot(aes(y = price, x = value, fill = value)) + geom_boxplot() + facet_wrap(~variable, scales = "free_x",ncol = 4 ) + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + theme(panel.spacing = unit(1, "lines"))
+
+ggplotly(g)
+```
+
+
+
+
+```{r}
+df = df %>% mutate(fuel_type = case_when(fuel_type=="None" ~ 0, TRUE ~ 1),heat_type = case_when(heat_type=="None" ~ 0, TRUE ~ 1),waterfront = case_when(waterfront=="no" ~ 0, TRUE ~ 1) )
+```
+
+
+
+## Checking linearity 
+
+Living area seems to be positively and highly correlated with price relative to other variables. 
+
+There also seems to be a positive linear relationship between for both rooms and bathrooms with price.
+
+Land value and price also to be correlated. However this is difficult to see in figure 1 as the scale for land value is large relative to where the majority of points are clustered around. On figure 2 we exclude the observation with a land value of $412600 to make it easier to determine whether a linear relationship exists. From figure 3, we can see that is plausible that there is a weak to moderate linear relation between land value and price.
+
+From figure 1, it is possible that there is a negative relationship between age and  price, however this is not linear. Thus we transform age to a log scale and plot it against price. The trend may be linear, although this is difficult to discern.
+
+On average it seems as though the number of fireplaces is positively linearly correlated with house prices. However it should be noted there that are only a few observations for houses with 3 or 4 fireplaces and thus may be beyond the extrapolation range.
+
+For lot size, pct college and bedroom variables it doesn't appear as though their is a linear relation on the original or log scale with price.
+
+
+```{r, fig.cap = "Figure 2"}
+df_numeric %>% gather( key = "variable", value = "value",-"price") %>%   ggplot(aes(y = price, x = value)) + geom_point() + facet_wrap(~variable, scales = "free_x", ncol = 4) + theme_minimal()
+```
+
+
+```{r, fig.cap = "Figure 3"}
+g1 = df_numeric %>% filter(land_value <400000) %>%  ggplot(aes(y = price, x = land_value)) + geom_point() + geom_smooth(color='black')+ geom_smooth(method='lm', formula= y~x) + theme_minimal()
+
+ggplotly(g1) 
+```
+
+```{r, fig.cap = "Figure 4"}
+g2 = df_numeric %>% mutate(log_age = log(age+1))%>%  ggplot(aes(y = price, x = log_age)) + geom_point() + geom_smooth(color='black')+ geom_smooth(method='lm', formula= y~x)+ theme_minimal()
+
+ggplotly(g2) 
+```
+
+
+### Checking Residuals for linearity
+
+```{r}
+df_numeric = df_numeric %>% mutate(log_age = log(age+1), log_land_value = log(land_value))
+
+g1 = lm(price~living_area, df)$residuals %>% data.frame(living_area = lm(price~living_area, df)$fitted.values) %>% ggplot(aes(x = living_area, y = .))+geom_point() + geom_hline(yintercept = 0)+ geom_smooth(method = "loess", se = FALSE)
+
+g2 = lm(price~land_value, df)$residuals %>% data.frame(land_value = lm(price~land_value, df)$fitted.values) %>% ggplot(aes(x = land_value, y = .))+geom_point() + geom_hline(yintercept = 0)+ geom_smooth(method = "loess", se = FALSE)
+
+g3 = lm(price~log_age, df_numeric)$residuals %>% data.frame(log_age = lm(price~log_age, df_numeric)$fitted.values) %>% ggplot(aes(x = log_age, y = .)) + geom_point() + geom_hline(yintercept = 0)+ geom_smooth(method = "loess", se = FALSE)
+
+g4 = lm(price~rooms, df)$residuals %>% data.frame(rooms = lm(price~rooms, df)$fitted.values) %>% ggplot(aes(x = rooms, y = .))+geom_point() + geom_hline(yintercept = 0)+ geom_smooth(method = "loess", se = FALSE)
+
+g5 = lm(price~bathrooms, df)$residuals %>% data.frame(bathrooms = lm(price~bathrooms, df)$fitted.values) %>% ggplot(aes(x = bathrooms, y = .))+geom_point() + geom_hline(yintercept = 0)+ geom_smooth(method = "loess", se = FALSE)
+
+g6 = lm(price~fireplaces, df)$residuals %>% data.frame(fireplaces = lm(price~fireplaces, df)$fitted.values) %>% ggplot(aes(x = fireplaces, y = .))+geom_point() + geom_hline(yintercept = 0)
+
+
+ggpubr:: ggarrange(g1,g2,g3, g4, g5, g6)
+```
+
+
+
+
+
+
+
+## Checking  homoscedasticity
+
+The  homoscedasticity assumption may be satisfied. This is indicated by a relatively random dispersion of residuals over the entire range of fitted prices. Interpretation is assisted by ggplot's geom_smooth() function which identifies residuals as more less centred around 0 for all fitted prices.  
+
+The situation doesn't seem to improve by thaking the log of price.
+
+```{r}
+df_filtered = df %>%  mutate(log_age = log(age+1))  %>% select(living_area, bathrooms,rooms, land_value, log_age, fireplaces, heat_type, fuel_type, waterfront, price, new_construct, central_air)
+#mt = lmtest::coeftest(lm(price~.,df_filtered), vcov = sandwich::vcovHC(M1))
+
+g = data.frame(res = lm(price~.,df_filtered)$residuals, fitted = lm(price~.,df_filtered)$fitted.values) %>% ggplot(aes(x=fitted, y = res))+geom_point()+geom_hline(yintercept = 0) +  geom_smooth(color='blue')
+
+ggplotly(g)
+
+
+
+```
+
+
+# Checking whether residuals are normally distributed
+
+The residuals deviate on tails indicating that they are not normally distributed. However, because our sample size is quite large, by the CLT, are inferences are likely to be approximately valid.
+
+Garths slides and 
+https://thestatsgeek.com/2013/08/07/assumptions-for-linear-regression/
+
+```{r}
+q = lm(price~.,df_filtered)$residuals %>% as.data.frame() %>% ggplot(aes(sample = .)) + stat_qq()+ stat_qq_line()
+
+q %>% ggplotly()
+```
+
+
+
+# Correlation Plot - Checking for multicollinearity
+All the variables other than rooms and bathrooms and living area seem to not have a strong correlation with each other. 
+
+```{r}
+#install.packages("qtlcharts")
+df %>% mutate(log_age = log(age+1)) %>% select(living_area, bathrooms,rooms, land_value, log_age, fireplaces, price)%>% qtlcharts::iplotCorr()
+```
+
+
+# Backward Selection Model
+```{r}
+df_filtered = df%>% mutate(log_age = log(age+1)) %>%   select(living_area, bathrooms,rooms, land_value, log_age, fireplaces, heat_type, fuel_type, waterfront, price, new_construct, central_air)
+
+M1 = lm(price ~., df_filtered) 
+step.back.aic = step(M1, 
+                     direction = "backward", 
+                     trace = FALSE)
+
+sjPlot::tab_model(
+  step.back.aic, 
+  show.ci = FALSE, 
+  show.aic = TRUE,
+  dv.labels = c("Backward model")
+)
+```
+
+```{r}
+set.seed(1)
+
+n = df_filtered %>% nrow()
+n_train = floor(0.8*n)
+n_test = n - n_train
+grp_labs = rep(c("Train","Test"), times = c(n_train, n_test)) 
+df_filtered$grp = sample(grp_labs)
+train_dat = df_filtered %>% filter(grp == "Train") %>% select(-grp)
+lm_simple_train = lm(price ~ living_area, data = train_dat)
+lm_full_train = lm(price ~.,data = train_dat)
+test_dat = df_filtered %>% filter(grp == "Test")
+simple_pred = predict(lm_simple_train, newdata = test_dat)
+full_pred = predict(lm_full_train, newdata = test_dat)
+```
+
+Metrics simple model
+```{r}
+simple_mse = mean((test_dat$price - simple_pred)^2)
+sqrt(simple_mse)
+simple_mae = mean(abs(test_dat$price - simple_pred))
+simple_mae
+
+
+```
+Metrics full model
+```{r}
+full_mse = mean((test_dat$price - full_pred)^2)
+sqrt(full_mse)
+full_mae = mean(abs(test_dat$price - full_pred))
+full_mae
+```
+## K-fold Cross validation 
+```{r}
+set.seed(1)
+
+library(caret)
+
+cv_simple = train(
+  price ~living_area, df_filtered,
+  method = "lm",
+  trControl = trainControl(
+    method = "cv", number = 10,
+    verboseIter = FALSE
+  )
+)
+
+cv_simple
+
+cv_full_step = train(
+  price ~ living_area+bathrooms+rooms+land_value+log_age+waterfront+new_construct+central_air,
+  df_filtered,
+  method = "lm",
+  trControl = trainControl(
+    method = "cv", number = 10,
+    verboseIter = FALSE
+  )
+)
+cv_full_step
+
+```
+
+```{r}
+accumulate_by <- function(dat, var) {
+  var <- lazyeval::f_eval(var, dat)
+  lvls <- plotly:::getLevels(var)
+  dats <- lapply(seq_along(lvls), function(x) {
+    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
+  })
+  dplyr::bind_rows(dats)
+}
+
+df <-  data.frame(test = test_dat$price, pred = full_pred)
+df_kfold = df
+
+
+
+fig <- df
+
+fig <- fig %>% accumulate_by(~test)
+
+
+fig <- fig %>%
+  plot_ly(
+    x = ~test, 
+    y = ~pred,
+    frame = ~frame, 
+    type = 'scatter',
+    mode = 'markers'
+  ) %>% add_lines (x = seq(0, 800000,length=10000), 
+             y =  seq(0.005, 800000, length=10000),
+             inherit = FALSE,
+             showlegend = FALSE)
+
+fig <- fig %>% layout(
+  xaxis = list(
+    title = "Actual",
+    zeroline = F
+  ),
+  yaxis = list(
+    title = "Predicted",
+    zeroline = F
+  )
+) 
+fig <- fig %>% animation_opts(
+  frame = 0, 
+  transition = 0, 
+  redraw = FALSE
+)
+fig <- fig %>% animation_slider(
+  hide = T
+)
+fig <- fig %>% animation_button(
+  x = 1, xanchor = "right", y = 0, yanchor = "bottom"
+)
+
+save(df_kfold, fig, file = "Executive Summary - Report/Rdata_Files/kfold_plot.RData")
+save(df_kfold, fig, file = "Presentation/Rdata_Files/kfold_plot.RData")
+
+fig
+
+
+
+```
+
+
+ 
+ 
+# Model Selection
+
+```{r}
+#install.packages("mplot")
+df_model_stability = df_filtered%>% select(-grp)
+colnames(df_model_stability) = c("la", "brms", "rms", "lv", "log_age", "fp","ht","ft", "wf","pr","nc","ca")
+
+#lm.d <-  lm(pr~., df_model_stability)
+#vis.d = vis(lm.d, B = 200)
+#af.d = af(lm.d, B = 200, n.c = 100, c.max = 100)
+#save(lm.d, vis.d, af.d, file = "Presentation/Rdata_Files/houses_main.RData")
+#save(lm.d, vis.d, af.d, file = "Executive Summary - Report/Rdata_Files/houses_main.RData")
+
+```
+
+```{r}
+load("Presentation/Rdata_Files/houses_main.RData")
+```
+
+
+The variables living area, land value, waterfront, new construct (ncyes), bathrooms (brms) and log_age are important regardless of the penalty parameter as they are almost always selected in the variable inclusion plot. Additionally, although the probability that the central air-conditioning (cayes) variable is selected in the bootstrapped samples diminishes when the penalty increases, it seems quite important. The fireplace (fp) and fuel type (ft) parameters lie below the random parameter (rv) that doesn't have a meaningful correlation with price. This indicates that these parameters aren't important to the model. The probability that the heat type (ht) variable is selected hovers near the rv parameter, indicating that it is not important. As the penalty $\lambda$ increases to 15, the probability that the rooms parameter is selected in one of the optimal bootstrapped models converges to 0 similarly to fp, ft, rv and ht indicating that it is unlikely to be an important parameter.
+
+We will investigate whether the ncyes and room parameters are important using loss against size and model stability plots. 
+```{r}
+library("mplot")
+g1 = plot(vis.d, interactive = FALSE, which = "vip")   
+plotly::ggplotly(g1) 
+```
+
+
+
+
+From the loss vs dimension plot it appears as though models with cayes typically have a slightly lower loss than models without it for $k \in [2,8]$. Furthermore, from the model stability plot, cayes appears in all dominant models for $k \geq 8$.
+```{r}
+g1 = plot(vis.d, which = "lvk", max.circle = 10, highlight = "cayes", interactive = FALSE, seed = 1) %>% ggplotly()
+g2 = plot(vis.d, which = "boot", max.circle = 10, highlight = "cayes", interactive = FALSE, seed = 1) %>% ggplotly()
+
+#Changing legend labels and grouping legend toggles together
+g1$x$data[[1]]$name = "Without cayes"
+g1$x$data[[2]]$name = "With cayes"
+g1$x$data[[1]]$legendgroup = 1
+g1$x$data[[2]]$legendgroup = 2
+
+
+g2$x$data[[1]]$name = "Without cayes"
+g2$x$data[[2]]$name = "With cayes"
+g2$x$data[[2]]$legendgroup = 1
+g2$x$data[[1]]$legendgroup = 2
+
+plotly:: subplot(g1, style(g2,showlegend = FALSE) ,shareY = TRUE, heights = 0.7)
+```
+
+
+
+It is interesting to see that there is a set of models without the rooms variable that perform worse than with it's inclusion for $k \in [2,9]$. Additionally, the rooms variable was in all models of $k \geq 9$, indicating that it may a stable choice.
+
+```{r}
+g1 = plot(vis.d, which = "lvk", max.circle = 10, highlight = "rms", interactive = FALSE, seed = 1) %>% ggplotly()
+g2 = plot(vis.d, which = "boot", max.circle = 10, highlight = "rms", interactive = FALSE, seed = 1) %>% ggplotly()
+
+g1$x$data[[1]]$name = "Without rms"
+g1$x$data[[2]]$name = "With rms"
+g1$x$data[[1]]$legendgroup = 1
+g1$x$data[[2]]$legendgroup = 2
+
+g2$x$data[[1]]$name = "Without rms"
+g2$x$data[[2]]$name = "With rms"
+g2$x$data[[2]]$legendgroup = 1
+g2$x$data[[1]]$legendgroup = 2
+
+plotly:: subplot(g1, style(g2,showlegend = FALSE) ,shareY = TRUE, heights = 0.7)
+
+```
+
+As in the variable inclusion plots (VIP), la is the most important variable followed by land value. Bathrooms and waterfront are competing in models of size 4 (inclusive of the intercept), however the models with brms is more dominant with a probability of 0.66 of being selected. There is no clear dominant model of size 5 as both ncyes and age are competing for selection. There are dominant models of $k \in [6,8]$. Interestingly, the rms variable is in 0.62 of the models of size 9, indicating that it may be a stable option in contrast to what was observed in the high penalty stages of the VIP. It should be noted that a model of $k=9$ being selected with 0.67 is empirically stronger than selecting the models of a lower size and a similar probability (such as what was observed in the cases of $k \in \text{{4,6,7,8}}$)
+
+In models of size 10 heat type was in 0.44 of the dominant models similarly to fuel type in models of size 11. However from the VIP, we saw that ht and ft follows RV quite closely for its entire path, so it is not likely to be a stable option. Models of size 11 doesn't have a clear dominant model and the dominant model of size 12 includes RV which should not be significantly to price.
+```{r}
+vis.d 
+```
+
+Thus the final model we shall proceed with is the dominant model of size 9. This is the model that was also selected through step-wise regression.
+
+## K-fold Cross validation 
+```{r}
+set.seed(1)
+
+library(caret)
+
+cv_step = train(
+  price ~ living_area+bathrooms+rooms+land_value+log_age+waterfront+new_construct+central_air+heat_type,
+  df_filtered,
+  method = "lm",
+  trControl = trainControl(
+    method = "cv", number = 10,
+    verboseIter = FALSE
+  )
+)
+cv_step
+
+
+cv_stable_8 = train(
+  price ~living_area+bathrooms+land_value+log_age+waterfront+new_construct+central_air, df_filtered,
+  method = "lm",
+  trControl = trainControl(
+    method = "cv", number = 10,
+    verboseIter = FALSE
+  )
+)
+
+cv_stable_8
+
+
+cv_stable_9 = train(
+  price ~living_area+bathrooms+land_value+log_age+waterfront+new_construct+central_air+rooms, df_filtered,
+  method = "lm",
+  trControl = trainControl(
+    method = "cv", number = 10,
+    verboseIter = FALSE
+  )
+)
+
+cv_stable_9
+
+```
+
+Out of sample the stable model of dimension 8 has the smallest RMSE.
+```{r}
+library("gt")
+
+cross.step = cv_step$results %>% select(Rsquared, RMSE, MAE)
+cross.8 = cv_stable_8$results %>% select(Rsquared, RMSE, MAE)
+cross.9 = cv_stable_9$results %>% select(Rsquared, RMSE, MAE)
+
+evaluations = cbind(Model = c("Stepwise","Stable (K=8)","Stable (K= 9)"),rbind(cross.step, cross.8, cross.9)) 
+
+
+tb1 = evaluations %>% gt::gt() %>% tab_style(
+    style = list(
+      cell_text(weight = "bold")
+      ),locations = cells_column_labels(columns = vars(Model, Rsquared, RMSE, MAE))
+    )  %>%  tab_style(
+    style = list(
+      cell_fill(color = "green"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_body(
+      columns = vars(RMSE),
+      rows = RMSE == min(RMSE)
+  )
+    )%>%  tab_style(
+    style = list(
+      cell_fill(color = "green"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_body(
+      columns = vars(MAE),
+      rows = MAE == min(MAE)
+  )
+    )%>%  tab_style(
+    style = list(
+      cell_fill(color = "green"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_body(
+      columns = vars(Rsquared),
+      rows = Rsquared == max(Rsquared)
+  )
+    )
+
+tb2 = tb1 %>% tab_style(
+    style = list(
+      cell_fill(color = "red"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_body(
+      columns = vars(RMSE),
+      rows = RMSE == max(RMSE)
+  )
+    )%>%  tab_style(
+    style = list(
+      cell_fill(color = "red"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_body(
+      columns = vars(MAE),
+      rows = MAE == max(MAE)
+  )
+    )%>%  tab_style(
+    style = list(
+      cell_fill(color = "red"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_body(
+      columns = vars(Rsquared),
+      rows = Rsquared == min(Rsquared)
+  )
+    )
+
+
+tb2 = cols_label(tb2, Rsquared = "R^2")
+model_final = lm(price ~living_area+bathrooms+land_value+log_age+waterfront+new_construct+central_air+rooms, df_filtered)
+
+save(tb2, model_final,file = "Presentation/Rdata_Files/model_comparison.RData")
+save(tb2, model_final,file = "Executive Summary - Report/Rdata_Files/model_comparison.RData")
+
+
+
+```
+
+
+

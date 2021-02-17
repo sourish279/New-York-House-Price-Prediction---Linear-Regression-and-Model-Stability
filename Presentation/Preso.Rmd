@@ -1,0 +1,411 @@
+---
+title: "House Prices in New York"
+subtitle: "Linear Regression and Model Stability"
+author: "Sourish Iyengar"
+output:
+  xaringan::moon_reader:
+    css: ["default", "assets/sydney-fonts.css", "assets/sydney.css"]
+    self_contained: false # if true, fonts will be stored locally
+    seal: true # show a title slide with YAML information
+    includes:
+      in_header: "assets/mathjax-equation-numbers.html"
+    nature:
+      beforeInit: ["assets/remark-zoom.js", "https://platform.twitter.com/widgets.js"]
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: '4:3' # alternatives '16:9' or '4:3' or others e.g. 13:9
+      navigation:
+        scroll: false # disable slide transitions by scrolling
+---
+class: title-slide
+background-image: url(""), url("assets/HousesUpByDragontomato.jpg")
+background-position: 10% 90%, 100% 70%
+background-size: 160px, 100% 100%
+background-color: #0148A4
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+
+```{r, warning=FALSE, message=FALSE, include=FALSE}
+library("tidyverse")
+library("janitor")
+library("plotly")
+library("shiny")
+library("mplot")
+library("gt")
+library("gtsummary")
+library("webshot")
+```
+
+
+```{r, warning=FALSE, message=FALSE, include=FALSE}
+df = read_tsv("Rdata_Files/housing-prices-ge19.txt") %>% clean_names()
+df = df %>% mutate(central_air = if_else(central_air== 0, "no", "yes"), waterfront = if_else(waterfront== 0, "no", "yes"),test = if_else(test== 0, "no", "yes"), new_construct = if_else(new_construct== 0, "no", "yes"))
+
+df_numeric = df %>% select_if(is.numeric)
+df_character =  df %>% select_at(vars(names(.)[map_lgl(., is.character)], price))
+```
+
+```{r, include=FALSE}
+df = df %>% mutate(fuel_type = case_when(fuel_type=="None" ~ 0, TRUE ~ 1),heat_type = case_when(heat_type=="None" ~ 0, TRUE ~ 1),waterfront = case_when(waterfront=="no" ~ 0, TRUE ~ 1) )
+```
+## .Large[Introduction]
+
+
+---
+
+## Factors
+
+.pull-left[
+#### Numeric
+.small[
+- Number of bedrooms
+
+- Number of fireplaces
+
+- Number of bathrooms
+
+- Number of rooms
+
+- Price (USD)
+
+- Land value (USD)
+
+- Lot size (acres)
+
+- Age (years)
+
+- Living area (square feet)
+
+- Percentage of neighbourhood that graduated college
+]
+]
+
+
+.pull-right[
+#### Categorical
+.small[
+- Type of heating system
+
+- Fuel used for heating
+
+- Type of sewer system
+
+- Presence of waterfront
+
+- Presence of central air-conditioning
+
+- New construction
+
+- Test
+]
+]
+
+---
+class:segue
+
+# Assumptions
+
+
+---
+
+## .red[Assumption Checking]
+
+- Linearity:
+
+  - Non-linearity makes it systematically invalid to fit a linear model
+
+--
+
+- Homoskedasticity of errors
+
+
+
+- Independence of errors
+
+
+
+- Errors follows a normal distribution
+
+--
+
+Errors not following $\mathcal{N}(0,\sigma^2)$ may lead to our inferences being invalid
+
+---
+
+## .red[Assumptions - Linearity]
+
+- Transformed age to $\log(\text{age}+1)$; dropped lot size, bedrooms and percentage of college graduates
+
+--
+
+- Plot of the residuals vs fitted values and look for an even spread about the horizontal 0 line
+
+
+```{r, echo = FALSE, message = FALSE, fig.align = 'center'}
+df_filtered = df %>%  mutate(log_age = log(age+1))  %>% select(living_area, bathrooms,rooms, land_value, log_age, fireplaces, heat_type, fuel_type, waterfront, price, new_construct, central_air)
+
+g = data.frame(res = lm(price~.,df_filtered)$residuals, fitted = lm(price~.,df_filtered)$fitted.values) %>% ggplot(aes(x=fitted, y = res))+xlab("Fitted")+ylab("Residuals")+geom_point()+geom_hline(yintercept = 0) +  geom_smooth(color='blue') + theme_minimal()
+
+
+ggplotly(g) %>% as_widget() %>% htmlwidgets::saveWidget( "assets/g1.html")
+
+```
+.center[
+<iframe src = "assets/g1.html" width="95%" height="350" id="igraph" scrolling="no" seamless="seamless" frameBorder="0"></iframe>
+]
+---
+
+## .red[Assumptions - Homoskedasticity]
+
+- The residuals roughly equally spread above and below 0 and thus may have may indicate homoskedasticity in the residuals
+
+
+```{r, echo = FALSE, message = FALSE, fig.align = 'center'}
+df_filtered = df %>%  mutate(log_age = log(age+1))  %>% select(living_area, bathrooms,rooms, land_value, log_age, fireplaces, heat_type, fuel_type, waterfront, price, new_construct, central_air)
+
+g = data.frame(res = lm(price~.,df_filtered)$residuals, fitted = lm(price~.,df_filtered)$fitted.values) %>% ggplot(aes(x=fitted, y = res))+xlab("Fitted")+ylab("Residuals")+geom_point()+geom_hline(yintercept = 0)  + theme_minimal()+geom_hline(yintercept = 250000, colour = "red",linetype="dashed")
+
+ggplotly(g) %>% as_widget() %>% htmlwidgets::saveWidget( "assets/g2.html")
+
+```
+.center[
+<iframe src = "assets/g2.html" width="95%" height="350" id="igraph" scrolling="no" seamless="seamless" frameBorder="0"></iframe>
+]
+
+---
+## .red[Assumptions - Independence & Normality]
+
+- Observations of prices for different houses are largely independent
+
+--
+
+- Rely on Central Limit Theorem for approximately valid inferences
+
+
+```{r, echo = FALSE, message = FALSE, fig.align = 'center'}
+q = lm(price~.,df_filtered)$residuals %>% as.data.frame() %>% ggplot(aes(sample = .)) + xlab("Theoretical")+ylab("Sample") + stat_qq()+ stat_qq_line() + theme_minimal()
+
+q %>% ggplotly() %>% as_widget() %>% htmlwidgets::saveWidget( "assets/q.html")
+```
+.center[
+<iframe src = "assets/q.html" width="95%" height="350" id="igraph" scrolling="no" seamless="seamless" frameBorder="0"></iframe>
+]
+
+---
+class:segue
+
+# Model Selection
+
+ 
+ 
+---
+##Categorical Variables
+
+```{r, message = FALSE, fig.align = 'center', include = FALSE}
+a <- list(
+  text = "Heat Type Boxplot",
+  xref = "paper",
+  yref = "paper",
+  yanchor = "bottom",
+  xanchor = "center",
+  align = "center",
+  x = 0.5,
+  y = 1,
+  showarrow = FALSE
+)
+
+b <- list(
+  text = "Fuel Type Boxplot",
+  xref = "paper",
+  yref = "paper",
+  yanchor = "bottom",
+  xanchor = "center",
+  align = "center",
+  x = 0.5,
+  y = 1,
+  showarrow = FALSE
+)
+
+
+```
+
+
+```{r, echo = FALSE, message = FALSE, fig.align = 'center', include = FALSE}
+df2 = read_tsv("Rdata_Files/housing-prices-ge19.txt") %>% clean_names()
+
+lev1 = c("Hot Air", "Hot Water", "Electric", "None")
+lev2 = c("Gas","Oil","Electric","None","Solar","Unknown/Other", "Wood")
+
+g1 = df2  %>% mutate(heat_type = factor(heat_type, levels = lev1)) %>% ggplot(aes(x = heat_type, y = price, fill = heat_type)) + geom_boxplot() + theme_minimal()+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+g1 = ggplotly(g1) %>% layout(annotations = list(a), showlegend = FALSE)
+g1$x$layout$annotations[[1]]$text = ""
+
+g2 = df2 %>% mutate(fuel_type = factor(fuel_type, levels = lev2)) %>%  ggplot(aes(x = fuel_type, y = price, fill = fuel_type)) + geom_boxplot()+ theme_minimal()+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+g2 = ggplotly(g2) %>% layout(annotations = list(b), showlegend = FALSE)
+g2$x$layout$annotations[[1]]$text = ""
+
+box = subplot(g1,g2) %>% div(align = 'center')
+htmltools::save_html(box, file="box.html") 
+file.copy(from = "box.html",
+          to   = "assets/box.html")
+file.remove("box.html")
+```
+<iframe src = "assets/box.html" width = "3000" height = "700" frameborder="0"></iframe
+
+---
+
+## Categorical Variables
+
+#### Refined Variables:
+.pull-left[
+Heat type: 
+- yes - have heating
+- no - don't have heating
+]
+.pull-right[
+Fuel type:
+- yes - have fueling
+- no - don't have fueling
+]
+
+--
+
+#### Dropped categories: 
+- Test
+- Sewer Type
+
+
+---
+## Stepwise Regression
+$$\color{red}{\text{AIC}} = n\log\left(\frac{\text{Residual sum of squares}}{n}\right) + 2p$$
+
+
+.pull-left[
+#### Variables Selected
+.small[
+- Living area
+
+- Bathrooms
+
+- Rooms
+
+- Land value
+
+- Log(age)
+
+- Heat type
+
+- Waterfront
+
+- New Construct
+
+- Central air-conditioning]
+]
+
+.pull-right[
+#### Variables Dropped
+.small[
+- Fireplaces
+
+- Fuel type]
+
+]
+
+
+
+
+```{r include = FALSE}
+load("Rdata_Files/houses_main.RData")
+```
+---
+class:segue
+
+# Model Selection
+
+---
+## Variable Inclusion Plot
+```{r, echo=FALSE, message = FALSE, out.height="100%", results = "asis"}
+p1 = plot(vis.d, which="vip", interactive = TRUE,
+          width=800, shiny = TRUE,
+          height=440, fontSize=20, left=130, 
+          chartWidth = "60%")
+cat(p1$html$chart, file="assets/p1.html")
+
+```
+<iframe src = "assets/p1.html" width = "810" height = "500" frameborder="0"></iframe>
+
+---
+## Model Stability Plots
+```{r, echo=FALSE, message = FALSE, warning = FALSE}
+p2 = plot(vis.d, which="boot", interactive = TRUE,
+          width=800, shiny = TRUE,
+          height=440, fontSize=20, left=130, 
+          chartWidth = "60%",highlight = "rms")
+cat(p2$html$chart, file="assets/p2.html")
+
+```
+
+
+<iframe src = "assets/p2.html" width = "810" height = "500" frameborder="0"></iframe>
+---
+## K-fold Cross Validation: Model Comparison
+
+```{r, include = FALSE}
+load("Rdata_Files/model_comparison.RData")
+```
+
+```{r, echo=TRUE,results = "asis", include = FALSE}
+#tb2
+gt::gtsave(tb2, file = file.path("assets/tb2.png"))
+```
+.center[
+<img src="assets/tb2.png">
+]
+
+#### Colour Legend
+- .red[Red] - Worst model for a given metric
+- .green[Green] - Best model for a given metric
+
+
+---
+## Out of Sample Performance
+
+```{r, echo = FALSE, fig.height = 0.3, include=FALSE}
+load("Rdata_Files/kfold_plot.RData")
+htmltools::save_html(fig, file="Rdata_Files/fig_animation.html")  
+
+```
+<iframe src = "Rdata_Files/fig_animation.html" width = "800" height = "500" frameborder="0"></iframe>
+---
+## Final Model Coefficients
+
+
+
+```{r, results = "asis", include=FALSE}
+equation = equatiomatic::extract_eq(model_final, intercept = "beta",use_coefs = TRUE)
+```
+
+
+$$\operatorname{price} = 33317.24 + 67.21(\operatorname{living area}) + 19367.65(\operatorname{bathrooms})\,\, +$$ 
+$$0.93(\operatorname{land value}) - 9226.81(\operatorname{\log(age)}) + 122570.59(\operatorname{waterfront}_{\operatorname{yes}})\,\, -$$
+$$59575.95(\operatorname{new construct}_{\operatorname{yes}}) + 12562.28(\operatorname{central air}_{\operatorname{yes}}) + 2183.2(\operatorname{rooms})\, + \epsilon$$
+
+--
+
+- Intercept is not interpretable in the context of housing prices
+
+- Waterfront, new construct, bathrooms and central air conditioning is associated with a high magnitude of impact on price
+
+
+---
+class: title-slide
+background-image: url(""), url("assets/apartments.jpg")
+background-position: 10% 90%, 100% 70%
+background-size: 160px, 100% 100%
+background-color: #0148A4
+
+## .Large[Conclusion]

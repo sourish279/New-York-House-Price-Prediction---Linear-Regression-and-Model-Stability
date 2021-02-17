@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>House Prices in New York</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Sourish Iyengar" />
+    <script src="Preso_files/header-attrs/header-attrs.js"></script>
+    <link href="Preso_files/remark-css/default.css" rel="stylesheet" />
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } },
+      });
+    </script>
+    <style>
+    .mjx-mrow a {
+      color: black;
+      pointer-events: none;
+      cursor: default;
+    }
+    </style>
+    <link rel="stylesheet" href="assets/sydney-fonts.css" type="text/css" />
+    <link rel="stylesheet" href="assets/sydney.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# House Prices in New York
+## Linear Regression and Model Stability
+### Sourish Iyengar
+
+---
+
+class: title-slide
+background-image: url(""), url("assets/HousesUpByDragontomato.jpg")
+background-position: 10% 90%, 100% 70%
+background-size: 160px, 100% 100%
+background-color: #0148A4
+
+
+
+
+
+
+
+
+
+
+## .Large[Introduction]
+
+
+---
+
+## Factors
+
+.pull-left[
+#### Numeric
+.small[
+- Number of bedrooms
+
+- Number of fireplaces
+
+- Number of bathrooms
+
+- Number of rooms
+
+- Price (USD)
+
+- Land value (USD)
+
+- Lot size (acres)
+
+- Age (years)
+
+- Living area (square feet)
+
+- Percentage of neighbourhood that graduated college
+]
+]
+
+
+.pull-right[
+#### Categorical
+.small[
+- Type of heating system
+
+- Fuel used for heating
+
+- Type of sewer system
+
+- Presence of waterfront
+
+- Presence of central air-conditioning
+
+- New construction
+
+- Test
+]
+]
+
+---
+class:segue
+
+# Assumptions
+
+
+---
+
+## .red[Assumption Checking]
+
+- Linearity:
+
+  - Non-linearity makes it systematically invalid to fit a linear model
+
+--
+
+- Homoskedasticity of errors
+
+
+
+- Independence of errors
+
+
+
+- Errors follows a normal distribution
+
+--
+
+Errors not following `\(\mathcal{N}(0,\sigma^2)\)` may lead to our inferences being invalid
+
+---
+
+## .red[Assumptions - Linearity]
+
+- Transformed age to `\(\log(\text{age}+1)\)`; dropped lot size, bedrooms and percentage of college graduates
+
+--
+
+- Plot of the residuals vs fitted values and look for an even spread about the horizontal 0 line
+
+
+
+.center[
+&lt;iframe src = "assets/g1.html" width="95%" height="350" id="igraph" scrolling="no" seamless="seamless" frameBorder="0"&gt;&lt;/iframe&gt;
+]
+---
+
+## .red[Assumptions - Homoskedasticity]
+
+- The residuals roughly equally spread above and below 0 and thus may have may indicate homoskedasticity in the residuals
+
+
+
+.center[
+&lt;iframe src = "assets/g2.html" width="95%" height="350" id="igraph" scrolling="no" seamless="seamless" frameBorder="0"&gt;&lt;/iframe&gt;
+]
+
+---
+## .red[Assumptions - Independence &amp; Normality]
+
+- Observations of prices for different houses are largely independent
+
+--
+
+- Rely on Central Limit Theorem for approximately valid inferences
+
+
+
+.center[
+&lt;iframe src = "assets/q.html" width="95%" height="350" id="igraph" scrolling="no" seamless="seamless" frameBorder="0"&gt;&lt;/iframe&gt;
+]
+
+---
+class:segue
+
+# Model Selection
+
+ 
+ 
+---
+##Categorical Variables
+
+
+
+
+
+&lt;iframe src = "assets/box.html" width = "3000" height = "700" frameborder="0"&gt;&lt;/iframe
+
+---
+
+## Categorical Variables
+
+#### Refined Variables:
+.pull-left[
+Heat type: 
+- yes - have heating
+- no - don't have heating
+]
+.pull-right[
+Fuel type:
+- yes - have fueling
+- no - don't have fueling
+]
+
+--
+
+#### Dropped categories: 
+- Test
+- Sewer Type
+
+
+---
+## Stepwise Regression
+`$$\color{red}{\text{AIC}} = n\log\left(\frac{\text{Residual sum of squares}}{n}\right) + 2p$$`
+
+
+.pull-left[
+#### Variables Selected
+.small[
+- Living area
+
+- Bathrooms
+
+- Rooms
+
+- Land value
+
+- Log(age)
+
+- Heat type
+
+- Waterfront
+
+- New Construct
+
+- Central air-conditioning]
+]
+
+.pull-right[
+#### Variables Dropped
+.small[
+- Fireplaces
+
+- Fuel type]
+
+]
+
+
+
+
+
+---
+class:segue
+
+# Model Selection
+
+---
+## Variable Inclusion Plot
+
+&lt;iframe src = "assets/p1.html" width = "810" height = "500" frameborder="0"&gt;&lt;/iframe&gt;
+
+---
+## Model Stability Plots
+
+
+
+&lt;iframe src = "assets/p2.html" width = "810" height = "500" frameborder="0"&gt;&lt;/iframe&gt;
+---
+## K-fold Cross Validation: Model Comparison
+
+
+
+
+.center[
+&lt;img src="assets/tb2.png"&gt;
+]
+
+#### Colour Legend
+- .red[Red] - Worst model for a given metric
+- .green[Green] - Best model for a given metric
+
+
+---
+## Out of Sample Performance
+
+
+&lt;iframe src = "Rdata_Files/fig_animation.html" width = "800" height = "500" frameborder="0"&gt;&lt;/iframe&gt;
+---
+## Final Model Coefficients
+
+
+
+
+
+
+`$$\operatorname{price} = 33317.24 + 67.21(\operatorname{living area}) + 19367.65(\operatorname{bathrooms})\,\, +$$` 
+`$$0.93(\operatorname{land value}) - 9226.81(\operatorname{\log(age)}) + 122570.59(\operatorname{waterfront}_{\operatorname{yes}})\,\, -$$`
+`$$59575.95(\operatorname{new construct}_{\operatorname{yes}}) + 12562.28(\operatorname{central air}_{\operatorname{yes}}) + 2183.2(\operatorname{rooms})\, + \epsilon$$`
+
+--
+
+- Intercept is not interpretable in the context of housing prices
+
+- Waterfront, new construct, bathrooms and central air conditioning is associated with a high magnitude of impact on price
+
+
+---
+class: title-slide
+background-image: url(""), url("assets/apartments.jpg")
+background-position: 10% 90%, 100% 70%
+background-size: 160px, 100% 100%
+background-color: #0148A4
+
+## .Large[Conclusion]
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="assets/remark-zoom.js"></script>
+<script src="https://platform.twitter.com/widgets.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "4:3",
+"navigation": {
+"scroll": false
+}
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

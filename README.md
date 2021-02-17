@@ -10,8 +10,10 @@ had a MAE of 41443, the best out of our tested models. Limitations and
 additional variables that may improve performance are identified.
 
 
-![Image of Models](https://github.com/sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/tree/main/Presentation/assets/tb2.png)
+![Summary of Model Performance](https://github.com/sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/tree/main/Presentation/assets/tb2.png)
 
-Please refer to the exective summary pdf for a detailed explanation of the analysis conducted and the inferences that were made.
+Please refer to the exective summary report pdf linked below for a detailed explanation of the analysis conducted and the inferences that were made.
 
+![Summary of Model Performance](https://github.com/sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/blob/main/Executive%20Summary%20-%20Report/Report.pdf)
 
+Note: The RUN_FIRST.rmd was used to generate the plots and figures for the report and presentation.

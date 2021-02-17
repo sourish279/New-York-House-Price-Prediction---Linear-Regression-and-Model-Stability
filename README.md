@@ -14,6 +14,6 @@ additional variables that may improve performance are also identified.
 
 Please refer to the exective summary report pdf linked below for a detailed explanation of the analysis conducted and the inferences that were made.
 
-![Summary of Model Performance](https://github.com/sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/blob/main/Executive%20Summary%20-%20Report/Report.pdf)
+![Executive Summary Report](https://github.com/sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/blob/main/Executive%20Summary%20-%20Report/Report.pdf)
 
 Note: The RUN_FIRST.rmd was used to generate the plots and figures for the report and presentation.

@@ -5,9 +5,9 @@ predict house prices with given attributes. Model stability analysis was conduct
 presence of a waterfront, central air-conditioning, construct type and the
 number of bathrooms was associated with a large impact on house price.
 Unexpectedly, new constructs have a negative influence on price. This
-requires further examination. Our final model of 9 predictors out of 16
+requires further examination. The final model of 9 predictors out of 16
 had a MAE of 41443, the best out of our tested models. Limitations and
-additional variables that may improve performance are identified.
+additional variables that may improve performance are also identified.
 
 
 ![Summary of Model Performance](https://github.com/sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/tree/main/Presentation/assets/tb2.png)

@@ -8,3 +8,9 @@ Unexpectedly, new constructs have a negative influence on price. This
 requires further examination. Our final model of 9 predictors out of 16
 had a MAE of 41443, the best out of our tested models. Limitations and
 additional variables that may improve performance are identified.
+
+
+<p align="center">
+  <img src="sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/Presentation/assets" width="350" title="hover text">
+  <img src="sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/Presentation/assets" width="350" alt="accessibility text">
+</p>

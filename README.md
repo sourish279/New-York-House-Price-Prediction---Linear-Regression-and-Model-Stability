@@ -16,4 +16,4 @@ Please refer to the exective summary report pdf linked below for a detailed expl
 
 ![Executive Summary Report](https://github.com/sourish279/New-York-House-Price-Prediction---Linear-Regression-and-Model-Stability/blob/main/Executive%20Summary%20-%20Report/Report.pdf)
 
-Note: The RUN_FIRST.rmd was used to generate the plots and figures for the report and presentation.
+Note: The figure_generation.rmd was used to generate the regression models, plots and figures for the report and presentation.
